@@ -1,32 +1,83 @@
+// Necessary dependencies
 const router = require("express").Router();
+const path = require("path");
+const fs = require("fs");
 
-//get notes route
-router.get("/api/notes", (req,res) => {
-    //get the data - read
+// ============================================================
+// Initialize an array of data
+let notesArray = [];
 
-    //.then send the data res.json
+// ============================================================
+// API call to the notes page then sends results to the browser
+// as an array of objects
+router.get("/api/notes", (req, res) => {
+    try {
+        // Reads the notes from db.json file
+        notesArray = fs.readFileSync("./db/db.json", "utf8");
+        console.log("hello!");
+        // Parse data so notesArray is an array of objects
+        notesArray = JSON.parse(notesArray);
+        // Catch errors
+    } catch (err) {
+        console.log(err);
+    }
+    // Send objects to the browser
+    res.json(notesArray);
 });
 
-//add notes route
-router.post("/api/notes", (req,res) => {
-    //get the data - read
-
-    //modifigy the data if you need to - add the new note to the data - req.body 
-
-    //write the modified data back
-
-    //send new note res.json
+// ============================================================
+// Writes new note to the json file
+router.post("/api/notes", (req, res) => {
+    try {
+        // Reads the notes from db.json file
+        notesArray = fs.readFileSync("./db/db.json", "utf8");
+        console.log(notesArray);
+        // Parse data to get an array of objects
+        notesArray = JSON.parse(notesArray);
+        // Set new notes id
+        req.body.id = notesArray.length;
+        // Add the new note to the array objects
+        notesArray.push(req.body);
+        // Stringify to write note to the file
+        notesArray = JSON.stringify(notesArray);
+        // Writes new note to file
+        fs.writeFile("./db/db.json", notesArray, "utf8", function(err) {
+            if (err) throw err;
+        });
+        // Send note back to the browser
+        res.json(JSON.parse(notesArray));
+    } catch (err) {
+        throw err;
+    }
 });
 
-//delete notes route
-router.get("/api/notes/:id", (req,res) => {
-    //get the data - read
-
-    //modifigy the data if you need to filter out the one with the target id - id will be coming from req.params.id
-
-    //write the data back
-
-    //sedn back res.json sucess mesa
+// ============================================================
+// Delete a note
+router.delete("/api/notes/:id", (req, res) => {
+    try {
+        // Reads the notes from db.json file
+        notesArray = fs.readFileSync("./db/db.json", "utf8");
+        // Parse data to get an array of objects
+        notesArray = JSON.parse(notesArray);
+        // Delete the old note from the array
+        notesArray = notesArray.filter(function(note) {
+        return note.id != req.params.id;
+        });
+        // Stringify to write note to the file
+        notesArray = JSON.stringify(notesArray);
+        // Writes new note to file
+        fs.writeFile("./db/db.json", notesArray, "utf8", function(err) {
+            if (err) throw err;
+        });
+        // Send note back to the browser
+        res.send(JSON.parse(notesArray));
+    } catch (err) {
+        throw err;
+    }
 });
+
+// router.get("/api/notes", function(req, res) {
+//   return res.sendFile(path.json(__dirname, "./db/db.json"));
+// });
 
 module.exports = router;
