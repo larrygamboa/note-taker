@@ -76,8 +76,4 @@ router.delete("/api/notes/:id", (req, res) => {
     }
 });
 
-// router.get("/api/notes", function(req, res) {
-//   return res.sendFile(path.json(__dirname, "./db/db.json"));
-// });
-
 module.exports = router;
