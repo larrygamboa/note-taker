@@ -21,8 +21,8 @@ server.use(express.static(path.join(__dirname,"/public")));
 
 // ============================================================
 // Attach the routes
-server.use(require("./routes/htmlRoutes.js"));
 server.use(require("./routes/apiRoutes.js"));
+server.use(require("./routes/htmlRoutes.js"));
 
 // ============================================================
 // Start the server

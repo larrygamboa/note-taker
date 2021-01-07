@@ -1,79 +1,76 @@
-// Necessary dependencies
+// ========== Necessary dependencies ========== //
 const router = require("express").Router();
-const path = require("path");
 const fs = require("fs");
+const util = require("util");
+const { v4: uuidv4 } = require("uuid");
 
-// ============================================================
-// Initialize an array of data
-let notesArray = [];
+const readFile = util.promisify(fs.readFile);
+const writeFile = util.promisify(fs.writeFile);
 
-// ============================================================
-// API call to the notes page then sends results to the browser
-// as an array of objects
+const getNotes = () => {
+  return readFile("./db/db.json", "utf8").then((notes) => {
+    return JSON.parse(notes);
+  });
+};
+
+const addNote = (note) => {
+  const noteId = uuidv4();
+  const newNote = {
+    title: note.title,
+    text: note.text,
+    id: noteId
+  };
+  return getNotes().then((notes) => {
+    const allNotes = notes;
+    allNotes.push(newNote);
+    writeFile("./db/db.json", JSON.stringify(allNotes));
+    return newNote;
+  });
+};
+
+const removeNotes = (id) => {
+  return getNotes().then((notes) => {
+    const filteredNotes = notes.filter((note) => note.id !== id);
+    writeFile("./db/db.json", JSON.stringify(filteredNotes));
+    return id;
+  });
+};
+
+// ========== API call to the notes page then sends results to the browser ========== //
 router.get("/api/notes", (req, res) => {
-    try {
-        // Reads the notes from db.json file
-        notesArray = fs.readFileSync("./db/db.json", "utf8");
-        console.log("hello!");
-        // Parse data so notesArray is an array of objects
-        notesArray = JSON.parse(notesArray);
-        // Catch errors
-    } catch (err) {
-        console.log(err);
-    }
-    // Send objects to the browser
-    res.json(notesArray);
+  getNotes()
+    .then((notes) => {
+      res.json(notes);
+    })
+    .catch((error) => {
+      res.status(500).json(error);
+    });
 });
 
-// ============================================================
-// Writes new note to the json file
+// ========== Writes new note to the json file ========== //
 router.post("/api/notes", (req, res) => {
-    try {
-        // Reads the notes from db.json file
-        notesArray = fs.readFileSync("./db/db.json", "utf8");
-        console.log(notesArray);
-        // Parse data to get an array of objects
-        notesArray = JSON.parse(notesArray);
-        // Set new notes id
-        req.body.id = notesArray.length;
-        // Add the new note to the array objects
-        notesArray.push(req.body);
-        // Stringify to write note to the file
-        notesArray = JSON.stringify(notesArray);
-        // Writes new note to file
-        fs.writeFile("./db/db.json", notesArray, "utf8", function(err) {
-            if (err) throw err;
-        });
-        // Send note back to the browser
-        res.json(JSON.parse(notesArray));
-    } catch (err) {
-        throw err;
-    }
+  addNote(req.body)
+    .then((note) => {
+      res.json(note);
+    })
+    .catch((error) => {
+      res.status(500).json(error);
+    });
 });
 
-// ============================================================
-// Delete a note
+// ========== Deletes notes ========== //
 router.delete("/api/notes/:id", (req, res) => {
-    try {
-        // Reads the notes from db.json file
-        notesArray = fs.readFileSync("./db/db.json", "utf8");
-        // Parse data to get an array of objects
-        notesArray = JSON.parse(notesArray);
-        // Delete the old note from the array
-        notesArray = notesArray.filter(function(note) {
-        return note.id != req.params.id;
-        });
-        // Stringify to write note to the file
-        notesArray = JSON.stringify(notesArray);
-        // Writes new note to file
-        fs.writeFile("./db/db.json", notesArray, "utf8", function(err) {
-            if (err) throw err;
-        });
-        // Send note back to the browser
-        res.send(JSON.parse(notesArray));
-    } catch (err) {
-        throw err;
-    }
+  let noteId = req.params.id;
+  removeNotes(noteId)
+    .then((id) => {
+      res.json({
+          success: true,
+          id: id
+      });
+    })
+    .catch((error) => {
+      res.status(500).json(error);
+    });
 });
 
 module.exports = router;
